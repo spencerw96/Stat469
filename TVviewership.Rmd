@@ -55,9 +55,8 @@ ggplot(data = tv, mapping = aes(x = ShowNum, y = Viewers)) + geom_point() + labs
 ```
 
 3. Fixing d = 0 and D = 1, determine appropriate values of p, q, P, Q in your time series model (note you should be able to figure out the seasonal cycle value S). Only consider p{0,1,2}, q{0,1,2}, P{0,1} and Q{0,1}. Discuss how you came to choose your specific values.
-```{r}
-X <- model.matrix(Viewers~., data = tv)
-#Y <- tv$Viewers
+```{r warning=FALSE}
+X <- matrix(tv$ShowNum, ncol=1)
 
 ts_models <- c()
 for (i in 0:2) {
@@ -73,17 +72,19 @@ for (i in 0:2) {
 
 AIC.vals <- rep(NA, nrow(ts_models))
 
-for (m in 2:nrow(ts_models)) {
-  my.mod <- sarima(tv$Viewers, p = ts_models[m, 1],
+for (m in 1:nrow(ts_models)) {
+  my.mod <- sarima(log(tv$Viewers), p = ts_models[m, 1],
                    d = ts_models[m, 2],
                    q = ts_models[m, 3], 
                    P = ts_models[m, 4], 
                    D = ts_models[m, 5],
                    Q = ts_models[m, 6],
                    S = 10, 
-                   xreg = bs(tv$Viewers, degree = 1), details = FALSE)
+                   xreg = X, details = FALSE)
   AIC.vals[m] <- my.mod$AIC
-} 
+}
+
+ts_models[which.min(AIC.vals),]
 
 ```
 
