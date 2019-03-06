@@ -90,6 +90,7 @@ ts_models[which.min(AIC.vals),]
 
 4. Write down your selected time series regression model in terms of population parameters including your specification for the time series component of the residuals. Explain the meaning of any parameters in your model (including the time series components). Explain how statistical inference for your model can be used to predict the viewership moving forward.
 ```{r}
+# 2 0 0 0 1 1
 
 ```
 
