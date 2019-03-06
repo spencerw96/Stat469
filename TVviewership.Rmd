@@ -11,6 +11,7 @@ library(astsa)
 
 tv <- read.table("https://mheaton.byu.edu/Courses/Stat469/Topics/2%20-%20TemporalCorrelation/1%20-%20TimeSeries/HWCaseStudy/Data/Viewership.txt", header = TRUE)
 
+# change season and episode into factors
 tv$Season <- as.factor(tv$Season)
 tv$Episode <- as.factor(tv$Episode)
 
