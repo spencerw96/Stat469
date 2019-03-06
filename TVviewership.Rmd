@@ -5,10 +5,11 @@ date: "March 5, 2019"
 output: word_document
 ---
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 library(ggplot2)
 library(astsa)
 library(splines)
+library(tidyverse)
 
 tv <- read.table("https://mheaton.byu.edu/Courses/Stat469/Topics/2%20-%20TemporalCorrelation/1%20-%20TimeSeries/HWCaseStudy/Data/Viewership.txt", header = TRUE)
 
@@ -96,12 +97,56 @@ ts_models[which.min(AIC.vals),]
 
 5. Fit your chosen time series model and validate any model assumptions you used.
 ```{r}
+m <- which.min(AIC.vals)
+ts <- sarima(tv$Viewers, p = ts_models[m, 1],
+                   d = ts_models[m, 2],
+                   q = ts_models[m, 3],
+                   P = ts_models[m, 4], 
+                   D = ts_models[m, 5],
+                   Q = ts_models[m, 6],
+                   S = 10, 
+                   xreg = X, details = FALSE) 
+# view coefficients
+ts$ttable
 
+resid <- resid(ts$fit)
+coef <- ts$ttable[1, 1]  #DOUBLE CHECK THIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+fitted <- X%*%coef
+
+# ACF
+my.ACF <- acf(resid, lag.max = 20)
+ACF.dframe <- data.frame(Lag = my.ACF$lag, ACF = my.ACF$acf)
+ggplot(data = ACF.dframe, aes(x = Lag, y = ACF)) + geom_col()
+# the ACF plot shows that our data is not autocorrelated and is therefore independent
+
+# fitted v residuals
+ggplot(data = tv, aes(x = fitted, y = resid)) + geom_point()
+# the residuals are evenly distributed around 0
+
+# histogram of residuals
+ggplot(data = tv, aes(x = resid)) + geom_density()
+# the density curve is approximately normal 
 ```
 
 6. Perform a cross-validation of predictions generated from your model for the most recent season of shows. Report the quality of your predictions in terms of RPMSE. Provide a plot of your predictions along with observed viewership and 95% prediction interval limits.
 ```{r}
+train.set <- tv[1:(nrow(tv) - 10),]
+test.set <- tv[-(1:(nrow(tv) - 10)),]
+X.train <- X[1:(nrow(tv) - 10),]
+X.test <- X[-(1:(nrow(tv) - 10)),]    
 
+forecast <- sarima.for(train.set$Viewers, p = 2, d = 0, q = 0, P = 0, D = 1, Q = 1, S = 10,
+                       xreg = X.train, n.ahead = 10, newxreg = X.test)
+
+# rpmse
+rpmse <- (forecast$pred - test.set$Viewers)^2 %>% mean() %>% sqrt()
+rpmse
+# CI
+# 4 DOESN'T SEEM CORRECT!!!!!!!!!!
+low <- forecast$pred - qt(0.975, df = nrow(train.set) - 4)*forecast$se
+up <- forecast$pred + qt(0.975, df = nrow(train.set) - 4)*forecast$se
+cvg <- ((test.set$Viewers > low) & (test.set$Viewers < up)) %>% mean()
+cvg
 ```
 
 7. Determine if viewership is increasing or decreasing. Support your conclusions with appropriate hypothesis tests and confidence intervals.
