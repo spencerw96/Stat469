@@ -1,0 +1,110 @@
+---
+title: "TV Viewership"
+author: "Elise Gertsch"
+date: "March 5, 2019"
+output: word_document
+---
+
+```{r}
+library(ggplot2)
+library(astsa)
+
+tv <- read.table("https://mheaton.byu.edu/Courses/Stat469/Topics/2%20-%20TemporalCorrelation/1%20-%20TimeSeries/HWCaseStudy/Data/Viewership.txt", header = TRUE)
+
+tv$Season <- as.factor(tv$Season)
+tv$Episode <- as.factor(tv$Episode)
+
+```
+
+0. Because the change in viewership is highly important in determining whether to keep producing the show, use the log-transformed Viewers variable in all your analysis below. This way, the change from one show to the next corresponds to a percentage increase or decrease in viewership.
+```{r}
+tv$Viewers <- log(tv$Viewers)
+```
+
+1. Create exploratory plots and calculate summary statistics from the time series. Comment on any potential relationships you see between log(Viewers) and ShowNum (note, we are using ShowNum to denote "time" in this analysis).
+```{r}
+ggplot(data = tv, aes(x = ShowNum, y = Viewers)) + geom_point() + ggtitle("Viewership Over Time") + labs(x = "Episode", y = "Log(Viewership)") + geom_smooth(se = FALSE)
+ggplot(data = tv, aes(x = Season, y = Viewers)) + geom_boxplot()
+ggplot(data = tv, aes(x = Episode, y = Viewers)) + geom_boxplot()
+
+a <- aggregate(data = tv, Viewers ~ Season, mean)
+b <- aggregate(data = tv, Viewers ~ Season, sd)
+c <- aggregate(data = tv, Viewers ~ Season, median)
+d <- cbind(a, b[,-1], c[,-1])
+names(d) <- c("Season", "Mean Viewership", "Standard Deviation", "Median")
+d <- rbind(d, mean(tv$Viewers), sd(tv$Viewers), median(tv$Viewers))
+d
+
+```
+
+2. Fit a linear regression model to log(Viewers) using ShowNum as the explanatory variable. Determine if there is temporal correlation in the residuals which should be accounted for in your model. Discuss what this temporal correlation means for viewership.
+```{r}
+view <- lm(Viewers ~ ShowNum, data = tv)
+
+my.ACF <- acf(view$residuals, lag.max = 20)
+ACF.dframe <- data.frame(Lag = my.ACF$lag, ACF = my.ACF$acf)
+ggplot(data = ACF.dframe, aes(x = Lag, y = ACF)) + geom_col()
+
+ggplot(data = tv, mapping = aes(x = ShowNum, y = Viewers)) + geom_point() + labs(x = "Episodes", y = "Log(Viewership)") + ggtitle("Time Series of Log(TV Viewership)") + geom_line(aes(x = ShowNum, y = fitted(view)), col = "red")
+```
+
+3. Fixing d = 0 and D = 1, determine appropriate values of p, q, P, Q in your time series model (note you should be able to figure out the seasonal cycle value S). Only consider p{0,1,2}, q{0,1,2}, P{0,1} and Q{0,1}. Discuss how you came to choose your specific values.
+```{r}
+X <- model.matrix(Viewers~., data = tv)
+#Y <- tv$Viewers
+
+ts_models <- c()
+for (i in 0:2) {
+  for (j in 0:2) {
+    for (k in 0:1) {
+      for (l in 0:1) {
+        ts_models <- rbind(ts_models, c(i,0,j,k,1,l))
+      }
+    }
+  }
+}
+
+
+AIC.vals <- rep(NA, nrow(ts_models))
+
+for (m in 2:nrow(ts_models)) {
+  my.mod <- sarima(tv$Viewers, p = ts_models[m, 1],
+                   d = ts_models[m, 2],
+                   q = ts_models[m, 3], 
+                   P = ts_models[m, 4], 
+                   D = ts_models[m, 5],
+                   Q = ts_models[m, 6],
+                   S = 10, 
+                   xreg = bs(tv$Viewers, degree = 1), details = FALSE)
+  AIC.vals[m] <- my.mod$AIC
+} 
+
+```
+
+4. Write down your selected time series regression model in terms of population parameters including your specification for the time series component of the residuals. Explain the meaning of any parameters in your model (including the time series components). Explain how statistical inference for your model can be used to predict the viewership moving forward.
+```{r}
+
+```
+
+5. Fit your chosen time series model and validate any model assumptions you used.
+```{r}
+
+```
+
+6. Perform a cross-validation of predictions generated from your model for the most recent season of shows. Report the quality of your predictions in terms of RPMSE. Provide a plot of your predictions along with observed viewership and 95% prediction interval limits.
+```{r}
+
+```
+
+7. Determine if viewership is increasing or decreasing. Support your conclusions with appropriate hypothesis tests and confidence intervals.
+```{r}
+
+```
+
+8. Season 8 is already in production. Forecast the log(Viewers) forward for season 8. Comment on how executives would be able to use these forecasts to gauge if the show should continue into a ninth season.
+```{r}
+
+```
+
+
+
