@@ -23,19 +23,23 @@ tv$Viewers <- log(tv$Viewers)
 ```
 
 1. Create exploratory plots and calculate summary statistics from the time series. Comment on any potential relationships you see between log(Viewers) and ShowNum (note, we are using ShowNum to denote "time" in this analysis).
-```{r}
+```{r message=FALSE, warning=FALSE}
 ggplot(data = tv, aes(x = ShowNum, y = Viewers)) + geom_point() + ggtitle("Viewership Over Time") + labs(x = "Episode", y = "Log(Viewership)") + geom_smooth(se = FALSE)
-ggplot(data = tv, aes(x = Season, y = Viewers)) + geom_boxplot()
-ggplot(data = tv, aes(x = Episode, y = Viewers)) + geom_boxplot()
+ggplot(data = tv, aes(x = Season, y = Viewers)) + geom_boxplot() + ggtitle("Viewership Over Time by Season") + labs(x = "Episode", y = "Log(Viewership)")
+ggplot(data = tv, aes(x = Episode, y = Viewers)) + geom_boxplot() + ggtitle("Viewership Over Time by Episode") + labs(x = "Episode", y = "Log(Viewership)")
 
 a <- aggregate(data = tv, Viewers ~ Season, mean)
 b <- aggregate(data = tv, Viewers ~ Season, sd)
 c <- aggregate(data = tv, Viewers ~ Season, median)
-d <- cbind(a, b[,-1], c[,-1])
-names(d) <- c("Season", "Mean Viewership", "Standard Deviation", "Median")
-d <- rbind(d, mean(tv$Viewers), sd(tv$Viewers), median(tv$Viewers))
-d
-
+d <- as.data.frame(cbind(a, b[,-1], c[,-1]))
+names(d) <- c("Season", "Mean Log Viewership", "Standard Deviation", "Median")
+e <- as.data.frame(cbind("Overall", mean(tv$Viewers), sd(tv$Viewers), median(tv$Viewers)))
+names(e) <- c("Season", "Mean Log Viewership", "Standard Deviation", "Median")
+e <- rbind(d, e)
+e$`Mean Log Viewership` <- substr(e$`Mean Log Viewership`, 0, 5)
+e$`Standard Deviation` <- substr(e$`Standard Deviation`, 0, 5)
+e$`Median` <- substr(e$`Median`, 0, 5)
+e
 ```
 
 2. Fit a linear regression model to log(Viewers) using ShowNum as the explanatory variable. Determine if there is temporal correlation in the residuals which should be accounted for in your model. Discuss what this temporal correlation means for viewership.
