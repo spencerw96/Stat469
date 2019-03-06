@@ -1,0 +1,189 @@
+---
+title: "The Value of a College Education"
+author: "Elise Gertsch"
+date: "January 22, 2019"
+output: word_document
+---
+
+```{r include=FALSE}
+library(ggplot2)
+library(multcomp)
+library(car)
+library(tidyverse)
+
+getwd()
+getthatbread <- read.csv("https://mheaton.byu.edu/Courses/Stat469/Topics/1%20-%20Independence/1%20-%20IID/HWCaseStudy/Data/Salary.csv", header = TRUE)
+
+```
+
+1. Create exploratory plots and calculate summary statistics from the data. Comment on any potential relationships you see from these exploratory plots.
+```{r}
+# Salary v. Major
+ggplot(data = getthatbread, aes(x = MajorCategory, y = Salary)) + geom_boxplot() + xlab("College Majors by Category") + ylab("Annual Salary Five Years Post-Matriculation (Dollars)") + ggtitle("Annual Salary by Major") + coord_flip() 
+# the median salary varies greatly based on major
+
+# Salary v. Gender
+ggplot(data = getthatbread, aes(x = Gen, y = Salary)) + geom_boxplot() + xlab("Gender") + ylab("Annual Salary  Five Years Post-Matriculation (Dollars)") + ggtitle("Annual Salary by Gender")
+# it appears that the median salary for men is approximately $5000 more
+
+# Salary v. GPA
+ggplot(data = getthatbread, aes(x = GPA, y = Salary)) + geom_point() + xlab("GPA") + ylab("Annual Salary  Five Years Post-Matriculation (Dollars)") + ggtitle("Annual Salary by GPA")
+# despite high GPA, there is still a lot of variation in annual salary
+
+```
+
+2. Write down a linear regression model (in matrix and vector form) in terms of parameters. Explain the meaning of any parameters in your model. Explain how statistical inference for your model can be used to answer the effect of major choice and identify any gender discrimination.
+```{r}
+# model = beta_0 + beta1*MajorCategoryArts + beta2*MajorCategoryBiology&LifeSciences + beta3*MajorCategoryBusiness + beta4*MajorCategoryCommunications & Journalism + beta5* MajorCategoryComputers&Mathematics + beta6*MajorCategoryEducation + beta7*MajorCategoryEngineering + beta8*MajorCategoryHealth + beta9*MajorCategoryHumanities&Liberal Arts + beta10*          MajorCategoryIndustrialArts&Consumer Services + beta11*MajorCategoryInterdisciplinary + beta12*      MajorCategoryLaw&Public Policy + beta13*MajorCategoryPhysicalSciences + beta14*MajorCategoryPsychology&SocialWork + beta15*MajorCategorySocialScience + beta16*GenM + beta17*GPA 
+
+# y-hat = beta0 + beta1%*%X1 + beta2%*%X2 + ... + beta17%*%X17, where beta0 is the intercept, and beta1 - beta15 correspond to the different major categories with baseline = Agriculture and Natural Resources, beta16 = gender (baseline = female), and beta17 = GPA. X1 - X16 are 0s and 1s based on whether it corresponds to the baseline or not, and X17 is a number between 0 and 4.0. 
+
+# Using our model, we can make inference on whether or not a higher or lower salary will be earned based on a particular major by making confidence intervals and looking at the regression coefficients. We can also predict whether or not a person will make more or less dependent on whether the person is male or female by looking at the regression coefficients and creating prediction intervals. 
+```
+
+
+3. Using first principles (i.e. DON'T use lm() but you can check your answer with lm()), calculate beta-hat and report the estimates in a table. Interpret the coefficient for 1 categorical explanatory variable and the coefficient for GPA. Also calculate the estimate of the residual variance (or standard deviation) and r^2 (you can use lm() to get r^2).
+```{r}
+X <- model.matrix(Salary ~ ., data = getthatbread)
+Y <- as.vector(getthatbread[,1])
+beta.hat <- solve(t(X)%*%X) %*% (t(X)%*%Y)
+beta.hat
+
+# GPA: For a one-unit increase in GPA, the average salary will increase by $5488.7368, all other variables held constant.
+# MajorCategoryBusiness: If the person is a business major, we expect their salary to be $14282.1484 higher than an Agriculture and Natural Resources major (the baseline), all other variables held constant. 
+
+# use lm to verify beta-hat estimates
+getthatbread.lm <- lm(Salary ~ ., data = getthatbread)
+#summary(getthatbread.lm)$coef
+
+# estimate s^2
+s2 <- (t(Y - (X%*%beta.hat))%*%(Y - (X%*%beta.hat))) / (nrow(getthatbread) - dim(X)[2])
+s2
+
+# verify s^2
+#(summary(getthatbread.lm)$sigma)^2
+
+# r^2
+summary(getthatbread.lm)$r.squared
+
+```
+
+4. One common argument is that some disciplines have greater biases (in terms of lower salaries) towards women than others. To verify this, check for interactions between major and gender by (i) drawing side-by-side boxplots of salary for each major category and gender combination and (ii) running an appropriate hypothesis test (either t or F) to check for significance. Comment on potential gender discrimination from your boxplot. For your hypothesis test, state your hypotheses, report an appropriate test statistic, p-value and give your conclusion.
+```{r}
+# i: boxplots
+# Salary v. Major
+ggplot(data = getthatbread, aes(x = MajorCategory, y = Salary, color = Gen)) + geom_boxplot() + xlab("College Majors by Category") + ylab("Annual Salary Five Years Post-Matriculation (Dollars)") + ggtitle("Annual Salary by Major") + coord_flip() 
+# 
+
+# ii : ANOVA
+full.lm <- lm(Salary ~ MajorCategory * Gen + GPA, data = getthatbread)
+reduced.lm <- lm(Salary ~ MajorCategory + Gen + GPA, data = getthatbread)
+# H0: there is no difference in mean salary between major/gender combinations
+# Ha: there is a difference in mean salary between major/gender combinations
+anova(full.lm, reduced.lm)
+# the F-statistic = 4.3595. 
+# pvalue is 7.161e-08, so we reject the null hypothesis and conclude that gender does have an effect on salary. 
+
+# but based on this t-test, we can see that for some individual major categories, gender is not significant
+fit <- lm(Salary ~ Gen * MajorCategory, data = getthatbread)
+# summary(fit)
+
+```
+
+5. The validity of the tests from #4 depend on the validity of the assumptions in your model (if your assumptions are violated then the p-values are likely wrong). Create graphics and/or run appropriate hypothesis tests to check the L-I-N-E assumptions associated with your multiple linear regression model including any interactions you found in #4. State why each assumption does or does not hold for the salary data.
+```{r}
+# 1: Linearity
+avPlot(getthatbread.lm, variable = "GPA")
+# we only need an avPlot for GPA, since this is our only quantitative variable. This avPlot looks linear and we can say that the condition of linearity is met. 
+
+# 2: Independence
+# our data is independent because one person's salary doesn't impact another person's salary
+
+# 3: Normality of Residuals
+ggplot() + geom_histogram(mapping = aes(x = stdres(getthatbread.lm)), binwidth = .25) + labs(x = "Standardized Residuals", y = "Frequency") + ggtitle("Normality of Residuals")
+# this histogram of the standardized residuals is approximately normal
+resids <- Y - (X %*% beta.hat)
+uniqueresids <- unique(resids)
+ks.test(uniqueresids, "pnorm")
+#  p-value < 2.2e-16 so yes residuals are normal
+
+# 4: Equal Variance
+ggplot(data = getthatbread, aes(x = fitted(getthatbread.lm), y = resid(getthatbread.lm))) + geom_point() + geom_abline(intercept = 0, slope = 0) + labs(x = "Fitted Values", y = "Residuals") + ggtitle("Checking Equal Variance")
+# the points are equally varied above and below 0
+
+```
+
+
+6. Calculate 97% confidence intervals for the coefficients for GPA, Gender and one major category. Interpret each interval.
+```{r}
+confint(full.lm, level = 0.97)[16:18,]
+
+# We are 97% confident that women majoring in Social Science have an average salary that is ($7854.45, $15903.25) more than the average salary for a woman majoring in agriculture (baseline). 
+# We are 97% confident that for men majoring in agriculture (baseline), the average salary is ($9395.57, $24387.63) more than the average salary for a woman majoring in agriculture. 
+# We are 97% confident that as there is a one-unit increase in GPA, the average salary goes up by ($4646.39, $6129.76).
+
+```
+
+7. For the Computers and Mathematics major category (beta5), perform a general linear hypothesis test that women, on average, earn less salary than men (for the same GPA). State your hypotheses, p-value and conclusion. If this test is significant, report and estimate a 95% confidence interval for how much more men earn than women in that major category.
+```{r}
+m <- c(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 3.5)
+f <- c(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 3.5)
+a <- m - f
+a.transpose <- t(a)
+
+# H0: men and women who majored in Computers and Mathematics with the same GPA (= 3.5) have the same salary
+# Ha: men and women who majored in Computers and Mathematics with the same GPA (= 3.5) do not have the same salary
+gl.test <- glht(getthatbread.lm, linfct = a.transpose, alternative = "greater")
+summary(gl.test)
+# with pvalue < 2e-16, we reject the null and conclude that the difference in salary for men and women for the given values of the explanatory variables is statistically significant
+confint(summary(gl.test), level = 0.95)
+# our 95% confidence interval for the difference in average salary for men and women, majoring in Computers and Mathematics and with the same GPA, is ($5144.3019, $6718.9520).
+
+```
+
+
+8. Using predict.lm() and your fitted model, predict your salary and report an associated 95% prediction interval. Interpret this interval in context.
+```{r}
+new.x = data.frame(MajorCategory = "Computers & Mathematics", Gen = "F", GPA = 3.73)
+predict.lm(getthatbread.lm, newdata = new.x, interval = "prediction", level = 0.95)
+
+# My predicted salary is $85082.88, with the following 95% prediction interval: ($74317.61, $95848.15). We are 95% confident that a woman who majored in Computers and Mathemetics with a 3.73 GPA will earn ($74317.61, $95848.15) 5 years after graduation. 
+
+```
+
+9. If we wish to use our model for prediction as we did in #8, we should verify how accurate our predictions are via cross-validation. Conduct a leave-one-out cross validation of the salary data. Report your average RPMSE along with the average prediction interval width. Comment on whether you think your predictions are accurate or not.
+```{r}
+n.cv <- dim(X)[1]
+bias <- rep(NA, n.cv)
+rpmse <- rep(NA, n.cv)
+cvg <- rep(NA, n.cv)
+width <- rep(NA, n.cv)
+
+for (cv in 1:n.cv) {
+  test.set <- getthatbread[cv,]
+  train.set <- getthatbread[-cv,]
+  
+  # fit a model with training set only
+  train.lm <- lm(Salary~., data = train.set)
+  
+  # predict test set
+  my.preds <- predict.lm(train.lm, newdata = test.set, interval = "prediction")
+  
+  # calculate diagnostics
+  bias[cv] <- (my.preds[,"fit"] - test.set[,"Salary"]) %>% mean()
+  rpmse[cv] <- ((my.preds[,"fit"] - test.set[,"Salary"])^2) %>% mean() %>% sqrt()
+  cvg[cv] <- ((test.set[,"Salary"] > my.preds[,"lwr"]) & (test.set[,"Salary"] < my.preds[,"upr"])) %>% mean()
+  width[cv] <- (my.preds[,"upr"] - my.preds[,"lwr"]) 
+  
+}
+
+mean(rpmse)
+# The average RPMSE is 4420.285.
+
+mean(width)
+# The mean width of our confidence intervals is 21485.95. 
+
+# Based on the mean RPMSE and mean prediction interval width, we would use our model for predictions but we think that it would only be decent rather than extremely accurate at making salary predictions. 
+```
+
+
