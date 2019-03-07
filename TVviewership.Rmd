@@ -116,7 +116,7 @@ ts <- sarima(tv$Viewers, p = ts_models[m, 1],
 ts$ttable
 
 resid <- resid(ts$fit)
-coef <- ts$ttable[1, 1]  #DOUBLE CHECK THIS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+coef <- ts$ttable[4, 1]
 fitted <- X%*%coef
 
 # ACF
@@ -148,11 +148,11 @@ forecast <- sarima.for(train.set$Viewers, p = 2, d = 0, q = 0, P = 0, D = 1, Q =
 rpmse <- (forecast$pred - test.set$Viewers)^2 %>% mean() %>% sqrt()
 rpmse
 # CI
-# 4 DOESN'T SEEM CORRECT!!!!!!!!!!
 low <- forecast$pred - qt(0.975, df = nrow(train.set) - 4)*forecast$se
 up <- forecast$pred + qt(0.975, df = nrow(train.set) - 4)*forecast$se
 cvg <- ((test.set$Viewers > low) & (test.set$Viewers < up)) %>% mean()
 cvg
+#The coverage seems a little too good here. We tried predicting the last 20 observations instead of just the last 10 and got a coverage of .7. Perhaps it's just the low sample size for validation and the luck of the draw that resulted in such good prediction intervals.
 ```
 
 7. Determine if viewership is increasing or decreasing. Support your conclusions with appropriate hypothesis tests and confidence intervals.
