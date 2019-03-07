@@ -14,6 +14,7 @@ library(tidyverse)
 tv <- read.table("https://mheaton.byu.edu/Courses/Stat469/Topics/2%20-%20TemporalCorrelation/1%20-%20TimeSeries/HWCaseStudy/Data/Viewership.txt", header = TRUE)
 
 # change season and episode into factors
+tv$SeasEp <- tv$Season+(tv$Episode-0.5)/10
 tv$Season <- as.factor(tv$Season)
 tv$Episode <- as.factor(tv$Episode)
 
@@ -58,7 +59,6 @@ ggplot(data = tv, mapping = aes(x = ShowNum, y = Viewers)) + geom_point() + labs
 3. Fixing d = 0 and D = 1, determine appropriate values of p, q, P, Q in your time series model (note you should be able to figure out the seasonal cycle value S). Only consider p{0,1,2}, q{0,1,2}, P{0,1} and Q{0,1}. Discuss how you came to choose your specific values.
 ```{r warning=FALSE}
 X <- matrix(tv$ShowNum, ncol=1)
-
 ts_models <- c()
 for (i in 0:2) {
   for (j in 0:2) {
@@ -87,6 +87,10 @@ for (m in 1:nrow(ts_models)) {
 
 ts_models[which.min(AIC.vals),]
 
+#The model printed here is our chosen SARIMA model. This was chosen by creating 36
+#different models with using each of the specified values and checking the AIC values
+#for each of the models. The model with the lowest AIC is the one that claims our 
+#choice.
 ```
 
 4. Write down your selected time series regression model in terms of population parameters including your specification for the time series component of the residuals. Explain the meaning of any parameters in your model (including the time series components). Explain how statistical inference for your model can be used to predict the viewership moving forward.
@@ -151,12 +155,25 @@ cvg
 
 7. Determine if viewership is increasing or decreasing. Support your conclusions with appropriate hypothesis tests and confidence intervals.
 ```{r}
+#According to our graph above, viewership appears to be increasing. We will
+#verify with a hypothesis test and confidence interval.
+
+ts$ttable[4,4]
+#The p-value of 0 suggests viewership is increasing.
+
+ts$ttable[4,1] + (c(-1, 1)*qt(0.975, df=nrow(tv) - 4)*ts$ttable[4,2])
+#The 95% confidence interval of 0.0168, 0.0340 has no negative values within it, so 
+#we may conclude viewership is increasing.
 
 ```
 
 8. Season 8 is already in production. Forecast the log(Viewers) forward for season 8. Comment on how executives would be able to use these forecasts to gauge if the show should continue into a ninth season.
 ```{r}
-
+pred_view <- max(tv$SeasEp) + seq(1/10, 10*(1/10), by=1/10)
+Xpred <- predict(X, newx=pred_view)
+my_for <- sarima.for(climate$AnnAnom, xreg=X,
+                     p=2, d=0, q=0, P=0, D=1, Q=1, S=10,
+                     n.ahead=10, newxreg=Xpred)
 ```
 
 
