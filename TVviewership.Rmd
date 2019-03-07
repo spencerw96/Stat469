@@ -54,6 +54,8 @@ ACF.dframe <- data.frame(Lag = my.ACF$lag, ACF = my.ACF$acf)
 ggplot(data = ACF.dframe, aes(x = Lag, y = ACF)) + geom_col()
 
 ggplot(data = tv, mapping = aes(x = ShowNum, y = Viewers)) + geom_point() + labs(x = "Episodes", y = "Log(Viewership)") + ggtitle("Time Series of Log(TV Viewership)") + geom_line(aes(x = ShowNum, y = fitted(view)), col = "red")
+
+#The temporal correlation shown in the plot below suggests there is correlation between each succeeding episode in a season: i.e. episode 1 is closely correlated with 2 but less correlated with 3. Episode 2 is closely correlated with 3 but less with 4. Etc. This means we can expect the viewership is any immediately succeeding episode to be related to viewership in the previous episode. 
 ```
 
 3. Fixing d = 0 and D = 1, determine appropriate values of p, q, P, Q in your time series model (note you should be able to figure out the seasonal cycle value S). Only consider p{0,1,2}, q{0,1,2}, P{0,1} and Q{0,1}. Discuss how you came to choose your specific values.
@@ -87,15 +89,15 @@ for (m in 1:nrow(ts_models)) {
 
 ts_models[which.min(AIC.vals),]
 
-#The model printed here is our chosen SARIMA model. This was chosen by creating 36
-#different models with using each of the specified values and checking the AIC values
-#for each of the models. The model with the lowest AIC is the one that claims our 
-#choice.
+#The model printed here is our chosen SARIMA model. This was chosen by creating 36 different models with using each of the specified values and checking the AIC values for each of the models. The model with the lowest AIC is the one that claims our choice.
 ```
 
 4. Write down your selected time series regression model in terms of population parameters including your specification for the time series component of the residuals. Explain the meaning of any parameters in your model (including the time series components). Explain how statistical inference for your model can be used to predict the viewership moving forward.
 ```{r}
 # 2 0 0 0 1 1
+#p = 2 shows decently high short term correlation, or there is high correlation between viewership in neighboring episodes. But since it is slowly decaying, there continues to be correlation even with non neighboring episodes.
+#D = 1 specifies that there exists a change from season 1 to season 2
+#Q = 1 shows seasonal correlation, or there is correlation between corresponding episodes of neighboring seasons of the series, though it decays quickly so season 3 does not have a close correlation with season 1.
 
 ```
 
