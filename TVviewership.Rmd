@@ -1,11 +1,11 @@
 ---
 title: "TV Viewership"
-author: "Elise Gertsch"
+author: "Elise Gertsch and Spencer Wadsworth"
 date: "March 5, 2019"
 output: word_document
 ---
 
-```{r message=FALSE, warning=FALSE}
+```{r echo = FALSE}
 library(ggplot2)
 library(astsa)
 library(splines)
@@ -155,8 +155,7 @@ cvg
 
 7. Determine if viewership is increasing or decreasing. Support your conclusions with appropriate hypothesis tests and confidence intervals.
 ```{r}
-#According to our graph above, viewership appears to be increasing. We will
-#verify with a hypothesis test and confidence interval.
+#According to our graph above, viewership appears to be increasing. We will verify with a hypothesis test and confidence interval.
 
 ts$ttable[4,4]
 #The p-value of 0 suggests viewership is increasing.
@@ -170,7 +169,6 @@ ts$ttable[4,1] + (c(-1, 1)*qt(0.975, df=nrow(tv) - 4)*ts$ttable[4,2])
 8. Season 8 is already in production. Forecast the log(Viewers) forward for season 8. Comment on how executives would be able to use these forecasts to gauge if the show should continue into a ninth season.
 ```{r}
 pred_view <- 71:80
-#Xpred <- predict(X, newx=pred_view)
 my_for <- sarima.for(tv$Viewers, xreg=X,
                      p=2, d=0, q=0, P=0, D=1, Q=1, S=10,
                      n.ahead=10, newxreg=pred_view)
