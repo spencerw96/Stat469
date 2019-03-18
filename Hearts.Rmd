@@ -9,12 +9,28 @@ output: word_document
 heart <- read.table("https://mheaton.byu.edu/Courses/Stat469/Topics/2%20-%20TemporalCorrelation/2%20-%20Longitudinal/HWCaseStudy/Data/Tachycardia.txt", header = TRUE)
 
 library(ggplot2)
+library(nlme)
 heart$SEX <- as.factor(heart$SEX)
 heart$PERIOD <- as.factor(heart$PERIOD)
 ```
 
 1. Create exploratory plots of looking at the relationship between HEARTRTE (the response variable) and some of the explanatory variables. Comment on any general relationships you see from the data.
 ```{r}
-ggplot(data = heart, aes(x = PERIOD, y = HEARTRTE, colour = SEX)) + geom_boxplot()
+ggplot(data = heart, aes(x = PERIOD, y = HEARTRTE, colour = SEX)) + geom_boxplot() + scale_color_hue(labels = c("Male", "Female")) + ylab("Heart Rate") + ggtitle("Heart Rate by Period and Sex")
+# for periods 1 and 3, women have a slightly higher median heart rate
+```
+
+2. Fit an independent MLR model with a linear effect of all variables except RANDID and PERIOD. Explore the residuals to see if there is evidence of correlation within patients from period to period (visit to visit).
+```{r}
+model <- gls(model = HEARTRTE ~ .-RANDID - PERIOD, data = heart, correlation = corSymm(form = ~ 1 | PERIOD), method = "ML")
+
+# constrained estimates
+coef(model$modelStruct$corStruct, unconstrained = FALSE)
+
+# beta-hat coefficients
+coef(model)
+
+# sigma^2
+(model$sigma)^2
 ```
 
