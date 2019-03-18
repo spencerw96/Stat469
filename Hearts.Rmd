@@ -1,0 +1,20 @@
+---
+title: "cardiovascular health"
+author: "Elise Gertsch"
+date: "March 18, 2019"
+output: word_document
+---
+
+```{r message=FALSE, warning=FALSE}
+heart <- read.table("https://mheaton.byu.edu/Courses/Stat469/Topics/2%20-%20TemporalCorrelation/2%20-%20Longitudinal/HWCaseStudy/Data/Tachycardia.txt", header = TRUE)
+
+library(ggplot2)
+heart$SEX <- as.factor(heart$SEX)
+heart$PERIOD <- as.factor(heart$PERIOD)
+```
+
+1. Create exploratory plots of looking at the relationship between HEARTRTE (the response variable) and some of the explanatory variables. Comment on any general relationships you see from the data.
+```{r}
+ggplot(data = heart, aes(x = PERIOD, y = HEARTRTE, colour = SEX)) + geom_boxplot()
+```
+
