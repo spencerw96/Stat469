@@ -18,19 +18,33 @@ heart$PERIOD <- as.factor(heart$PERIOD)
 ```{r}
 ggplot(data = heart, aes(x = PERIOD, y = HEARTRTE, colour = SEX)) + geom_boxplot() + scale_color_hue(labels = c("Male", "Female")) + ylab("Heart Rate") + ggtitle("Heart Rate by Period and Sex")
 # for periods 1 and 3, women have a slightly higher median heart rate
+
+ggplot(data = heart, aes(x = HEARTRTE)) + geom_density(fill = "darkblue")
 ```
 
 2. Fit an independent MLR model with a linear effect of all variables except RANDID and PERIOD. Explore the residuals to see if there is evidence of correlation within patients from period to period (visit to visit).
 ```{r}
-model <- gls(model = HEARTRTE ~ .-RANDID - PERIOD, data = heart, correlation = corSymm(form = ~ 1 | PERIOD), method = "ML")
-
-# constrained estimates
-coef(model$modelStruct$corStruct, unconstrained = FALSE)
+model <- lm(HEARTRTE ~ .-RANDID - PERIOD, data = heart)
 
 # beta-hat coefficients
 coef(model)
 
-# sigma^2
-(model$sigma)^2
+# histogram of the residuals
+ggplot(data = heart, aes(x = model$residuals)) + geom_histogram()
+```
+
+3. To determine an appropriate correlation structure to use, fit a longitudinal MLR model with an AR1, MA1 and general symmetric correlation matrix within each patient but independent across patients. Compare the model fits using AIC (which can be extracted from a gls() object using AIC()).
+```{r}
+mod_long <- gls(model = )
+```
+
+4. Write out your model for analyzing the Tachycardia data in terms of parameters. Explain and interpret any parameters associated with the model.
+```{r}
+
+```
+
+5. Fit your longitudinal model and validate any assumptions you made to fit the model.
+```{r}
+
 ```
 
