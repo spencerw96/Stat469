@@ -10,6 +10,7 @@ heart <- read.table("https://mheaton.byu.edu/Courses/Stat469/Topics/2%20-%20Temp
 
 library(ggplot2)
 library(nlme)
+library(car)
 heart$SEX <- as.factor(heart$SEX)
 heart$PERIOD <- as.factor(heart$PERIOD)
 ```
@@ -24,7 +25,7 @@ ggplot(data = heart, aes(x = HEARTRTE)) + geom_density(fill = "darkblue")
 
 2. Fit an independent MLR model with a linear effect of all variables except RANDID and PERIOD. Explore the residuals to see if there is evidence of correlation within patients from period to period (visit to visit).
 ```{r}
-model <- lm(HEARTRTE ~ .-RANDID - PERIOD, data = heart)
+model <- lm(log(HEARTRTE) ~ .-RANDID - PERIOD, data = heart)
 
 # beta-hat coefficients
 coef(model)
@@ -35,7 +36,17 @@ ggplot(data = heart, aes(x = model$residuals)) + geom_histogram()
 
 3. To determine an appropriate correlation structure to use, fit a longitudinal MLR model with an AR1, MA1 and general symmetric correlation matrix within each patient but independent across patients. Compare the model fits using AIC (which can be extracted from a gls() object using AIC()).
 ```{r}
-mod_long <- gls(model = )
+mod_long1 <- gls(model = log(HEARTRTE) ~ .-RANDID - PERIOD, data = heart, corSymm(form =~ 1 | RANDID), method = "ML")
+mod_long2 <- gls(model = log(HEARTRTE) ~ .-RANDID - PERIOD, data = heart, corAR1(form =~ 1 | RANDID), method = "ML")
+mod_long3 <- gls(model = log(HEARTRTE) ~ .-RANDID - PERIOD, data = heart, corARMA(form =~ 1 | RANDID, p = 0, q = 1), method = "ML") #ARIMA with p = 0 and q = 1
+
+# AIC
+AIC(model)
+AIC(mod_long1) # lowest AIC
+AIC(mod_long2)
+AIC(mod_long3)
+
+mod_long <- mod_long1
 ```
 
 4. Write out your model for analyzing the Tachycardia data in terms of parameters. Explain and interpret any parameters associated with the model.
@@ -45,6 +56,15 @@ mod_long <- gls(model = )
 
 5. Fit your longitudinal model and validate any assumptions you made to fit the model.
 ```{r}
+# linearity 
+# can use our independent model because this isn't impacted by the longitudinal nature of the data
+avPlots(model)
+
+# independence
+iresids <- stdres.gls(mod_long)
+iresid <- matrix(stdres.gls(mod_long), byrow = TRUE, ncol = 3)
+cor(iresid)
+# the correlations are close to 0 now, so we can say that our assumption of independence is met
 
 ```
 
