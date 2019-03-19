@@ -11,6 +11,9 @@ heart <- read.table("https://mheaton.byu.edu/Courses/Stat469/Topics/2%20-%20Temp
 library(ggplot2)
 library(nlme)
 library(car)
+source("https://raw.githubusercontent.com/MJHeaton/glstools/master/stdres.gls.R")
+library(multcomp)
+
 heart$SEX <- as.factor(heart$SEX)
 heart$PERIOD <- as.factor(heart$PERIOD)
 ```
@@ -64,7 +67,15 @@ avPlots(model)
 iresids <- stdres.gls(mod_long)
 iresid <- matrix(stdres.gls(mod_long), byrow = TRUE, ncol = 3)
 cor(iresid)
-# the correlations are close to 0 now, so we can say that our assumption of independence is met
+# the correlations are close to 0, so we can say that our assumption of independence is met
+
+# normality of residuals
+hist(iresids, xlab = "Decorrelated Residuals", main = "Histogram of Decorrelated Residuals")
+# approximately normal, so we will say that normality of the residuals is met
+
+# equal variance
+ggplot(data = heart, aes(x = fitted(mod_long), y = iresids)) + geom_point() + geom_hline(yintercept = 0, col = "red")
+# doesn't look very normally varied, but it is evenly distributed above and below 0 
 
 ```
 
