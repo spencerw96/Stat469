@@ -22,6 +22,10 @@ heart$PERIOD <- as.factor(heart$PERIOD)
 ```{r}
 ggplot(data = heart, aes(x = PERIOD, y = HEARTRTE, colour = SEX)) + geom_boxplot() + scale_color_hue(labels = c("Male", "Female")) + ylab("Heart Rate") + ggtitle("Heart Rate by Period and Sex")
 # for periods 1 and 3, women have a slightly higher median heart rate
+plot(log(HEARTRTE)~DIABP, data = heart)
+# We tried scatterplots with several of the response variables. This one shows a slight increase in heartrate as blood pressure increases.
+boxplot((log(HEARTRTE)~DIABETES), data = heart)
+# This plot shows that those with diabetes appear to have a higher slightly higher heartrate than those without diabetes. The hypothesized result will be evaluated more later on.
 
 ggplot(data = heart, aes(x = HEARTRTE)) + geom_density(fill = "darkblue")
 ```
@@ -29,6 +33,12 @@ ggplot(data = heart, aes(x = HEARTRTE)) + geom_density(fill = "darkblue")
 2. Fit an independent MLR model with a linear effect of all variables except RANDID and PERIOD. Explore the residuals to see if there is evidence of correlation within patients from period to period (visit to visit).
 ```{r}
 model <- lm(log(HEARTRTE) ~ .-RANDID - PERIOD, data = heart)
+
+# take residuals and check correlation matrix
+res <- matrix(resid(model), byrow=TRUE, ncol=3)
+cor_mat <- cor(res)
+cor_mat
+# In the matrix, besides in the diagonal, there are values from .39 to .5. There apparently is some correlation between the same patients in different periods.
 
 # beta-hat coefficients
 coef(model)
@@ -54,6 +64,11 @@ mod_long <- mod_long1
 
 4. Write out your model for analyzing the Tachycardia data in terms of parameters. Explain and interpret any parameters associated with the model.
 ```{r}
+# log(y) ~ N(X*β, σ^2*B)
+# log(y) is the log of the individual heartrates
+# X is the matrix with the various parameters plus an intercept. The parameters include age, currently smoking, blood pressure, sex, etc. Some are quantitative and some are categorical or factors.
+# β is the vector of coefficients for each of the variables.
+# σ^2*B is a covariance matrix. B is a matrix built with the matrix R, the correlation matrix built earlier in step 2, as the diagonals. This is to take into account the correlation between the different periods of the patients and decorrelate them so the assumption of independence may be used. 
 
 ```
 
@@ -78,4 +93,29 @@ ggplot(data = heart, aes(x = fitted(mod_long), y = iresids)) + geom_point() + ge
 # doesn't look very normally varied, but it is evenly distributed above and below 0 
 
 ```
+6. Is DIABETES a risk factor for Tachycardia? Justify your answer and explain any effect of DIABETES on heart rate (include uncertainty in your conclusions).
+```{r}
+summary(mod_long)
+a.trans <- matrix(c(0,0,0,0,0,0,0,0,1,0,0), nrow=1)
+summary(glht(mod_long, linfct=a.trans, alternative='greater'), rhs = 100)
+confint(glht(mod_long, linfct=a.trans, alternative='two.sided'))
+# The result of this glht test gives a p-value of 0.186, suggesting that diabetes does not necessarily contribute to Tachycardia. Also, the resultant confidence interval of -0.013 to 0.035 contains 0. Thus we cannot declare that diabetes is a risk factor.
+```
+7. What is the expected difference in heart rate for a female patient with at age 35 who is a smoker vs. an older female of 45 but not a smoker (assume the other characteristics are the same)? What does this say about the effect of smoking?
+```{r}
+smoke <- c(1,2,0,35,0,0,1,0,0,0,0)
+no_smoke <- c(1,2,0,45,0,0,0,0,0,0,0)
+a <- smoke - no_smoke
+a.transpose <- t(a)
+
+summary(glht(mod_long, linfct=a.transpose, alternative='two.sided'))
+confint(glht(mod_long, linfct=a.transpose, alternative='two.sided'))
+# The estimated difference between the heartrates of the two women is about 0.02%. With the confidence interval of 0.0098 to 0.0304. The woman who smokes is the one with the higher rate. This suggests that smoking will likely increase heartrate and contributes to Tachycardia, especially considering that she is 10 years younger than the woman who does not smoke, and that age results in a very small p-value in the model summary suggesting that age does contribute somewhat to Tachycardia.
+```
+
+
+
+
+
+
 
