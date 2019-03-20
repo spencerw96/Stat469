@@ -1,0 +1,17 @@
+---
+title: "PM Exposure"
+author: "Elise Gertsch"
+date: "March 20, 2019"
+output: word_document
+---
+
+```{r message=FALSE, warning=FALSE}
+pm <- read.table("https://mheaton.byu.edu/Courses/Stat469/Topics/2%20-%20TemporalCorrelation/3%20-%20Project/Data/BreathingZonePM.txt", header = TRUE)
+
+library(ggplot2)
+library(nlme)
+library(car)
+source("https://raw.githubusercontent.com/MJHeaton/glstools/master/stdres.gls.R")
+library(multcomp)
+```
+
