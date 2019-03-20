@@ -28,6 +28,8 @@ boxplot((log(HEARTRTE)~DIABETES), data = heart)
 # This plot shows that those with diabetes appear to have a higher slightly higher heartrate than those without diabetes. The hypothesized result will be evaluated more later on.
 
 ggplot(data = heart, aes(x = HEARTRTE)) + geom_density(fill = "darkblue")
+ggplot(data = heart, aes(x = log(HEARTRTE))) + geom_density(fill = "darkblue")
+# We will use the log of heart rate as our response variable because it is more normal.
 ```
 
 2. Fit an independent MLR model with a linear effect of all variables except RANDID and PERIOD. Explore the residuals to see if there is evidence of correlation within patients from period to period (visit to visit).
