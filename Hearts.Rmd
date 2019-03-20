@@ -1,6 +1,6 @@
 ---
 title: "cardiovascular health"
-author: "Elise Gertsch"
+author: "Elise Gertsch & Spencer Wadsworth"
 date: "March 18, 2019"
 output: word_document
 ---
@@ -96,10 +96,11 @@ ggplot(data = heart, aes(x = fitted(mod_long), y = iresids)) + geom_point() + ge
 6. Is DIABETES a risk factor for Tachycardia? Justify your answer and explain any effect of DIABETES on heart rate (include uncertainty in your conclusions).
 ```{r}
 summary(mod_long)
+
 a.trans <- matrix(c(0,0,0,0,0,0,0,0,1,0,0), nrow=1)
-summary(glht(mod_long, linfct=a.trans, alternative='greater'), rhs = 100)
+summary(glht(mod_long, linfct=a.trans, alternative='greater', rhs = 100))
 confint(glht(mod_long, linfct=a.trans, alternative='two.sided'))
-# The result of this glht test gives a p-value of 0.186, suggesting that diabetes does not necessarily contribute to Tachycardia. Also, the resultant confidence interval of -0.013 to 0.035 contains 0. Thus we cannot declare that diabetes is a risk factor.
+# The result of this glht test gives a p-value of 1, suggesting that diabetes does not necessarily contribute to Tachycardia. Also, the resultant confidence interval of -0.013 to 0.035 contains 0. Thus we cannot declare that diabetes is a risk factor.
 ```
 7. What is the expected difference in heart rate for a female patient with at age 35 who is a smoker vs. an older female of 45 but not a smoker (assume the other characteristics are the same)? What does this say about the effect of smoking?
 ```{r}
@@ -110,7 +111,7 @@ a.transpose <- t(a)
 
 summary(glht(mod_long, linfct=a.transpose, alternative='two.sided'))
 confint(glht(mod_long, linfct=a.transpose, alternative='two.sided'))
-# The estimated difference between the heartrates of the two women is about 0.02%. With the confidence interval of 0.0098 to 0.0304. The woman who smokes is the one with the higher rate. This suggests that smoking will likely increase heartrate and contributes to Tachycardia, especially considering that she is 10 years younger than the woman who does not smoke, and that age results in a very small p-value in the model summary suggesting that age does contribute somewhat to Tachycardia.
+# The estimated difference between the heartrates of the two women is about 0.02%. With the confidence interval of 0.0098 to 0.0304. The woman who smokes is the one with the higher rate. This suggests that smoking will likely increase heartrate and contributes to Tachycardia, especially considering that she is 10 years younger than the woman who does not smoke, and that age variable results in a very small p-value in the model summary suggesting that increasing age does contribute somewhat to Tachycardia.
 ```
 
 
