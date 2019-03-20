@@ -75,7 +75,18 @@ hist(iresids, xlab = "Decorrelated Residuals", main = "Histogram of Decorrelated
 
 # equal variance
 ggplot(data = heart, aes(x = fitted(mod_long), y = iresids)) + geom_point() + geom_hline(yintercept = 0, col = "red")
-# doesn't look very normally varied, but it is evenly distributed above and below 0 
+# points have somewhat of a pattern, but it is evenly distributed above and below 0 
 
 ```
+
+6. Is DIABETES a risk factor for Tachycardia? Justify your answer and explain any effect of DIABETES on heart rate (include uncertainty in your conclusions).
+```{r}
+
+```
+
+7. What is the expected difference in heart rate for a female patient with at age 35 who is a smoker vs. an older female of 45 but not a smoker (assume the other characteristics are the same)? What does this say about the effect of smoking?
+```{r}
+# use glht 
+```
+
 
