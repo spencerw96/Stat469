@@ -9,9 +9,69 @@ output: word_document
 pm <- read.table("https://mheaton.byu.edu/Courses/Stat469/Topics/2%20-%20TemporalCorrelation/3%20-%20Project/Data/BreathingZonePM.txt", header = TRUE)
 
 library(ggplot2)
+library(gridExtra)
 library(nlme)
 library(car)
 source("https://raw.githubusercontent.com/MJHeaton/glstools/master/stdres.gls.R")
 library(multcomp)
+```
+
+Exploratory Data Analytics
+```{r}
+ggplot(data = pm, aes(x = Aerosol, y = Stationary)) + geom_point() + geom_abline(slope = 1, intercept = 0, col = "red")
+# should probably do a log transformation of Aerosol and Stationary
+
+ggplot(data = pm, aes(x = log(Aerosol), y = log(Stationary))) + geom_point() + geom_abline(slope = 1, intercept = 0, col = "red")
+
+a <- ggplot(data = pm, aes(x = Activity, y = Stationary)) + geom_boxplot() + coord_flip()
+b <- ggplot(data = pm, aes(x = Activity, y = Aerosol)) + geom_boxplot() + coord_flip()
+grid.arrange(a, b, nrow = 1)
+# much more variability in aerosol measurements
+```
+
+Transform variables
+```{r}
+pm$Aerosol <- log(pm$Aerosol)
+pm$Stationary <- log(pm$Stationary)
+```
+
+LM
+```{r}
+model <- lm(Aerosol ~ .-ID - Minute, data = pm)
+AIC(model)
+
+# take residuals and check correlation matrix
+res <- matrix(resid(model), byrow=TRUE, ncol = 3)
+cor(res)
+# high correlation, so an lm model is not going to work
+```
+
+GLS
+```{r}
+mod_long <- gls(model = Aerosol ~ .-ID - Minute, data = pm, corAR1(form =~ 1 | ID), method = "ML")
+
+AIC(mod_long)
+
+iresid <- matrix(stdres.gls(mod_long), byrow = TRUE, ncol = 3)
+cor(iresid)
+# a lot lower now, but clearly still a correlation between minutes for the same patient
+```
+
+Check assumptions
+```{r}
+# linearity
+avPlots(model)
+# only need to check the one for Stationary
+
+# independence
+cor(iresid)
+# the correlations are close to 0, so we can say that our assumption of independence is met
+
+# normality of residuals
+hist(stdres.gls(mod_long), xlab = "Decorrelated Residuals", main = "Histogram of Decorrelated Residuals")
+# approximately normal, so we will say that normality of the residuals is met
+
+# equal variance
+ggplot(data = pm, aes(x = fitted(mod_long), y = stdres.gls(mod_long))) + geom_point() + geom_hline(yintercept = 0, col = "red") + xlab("Fitted Values") + ylab("Residuals") + ggtitle("Fitted Values v. Residuals")
 ```
 
