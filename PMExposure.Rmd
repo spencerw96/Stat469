@@ -96,4 +96,9 @@ anova(mod_long, stat_mod) # I feel like this is probably the one we want
 summary(mod_long)
 tab_model(mod_long) # gives the nice HTML table I pasted to our report
 
+# differences between children?
+id_mod <- gls(model = Aerosol ~ factor(ID), data = pm, corAR1(form =~ 1 | ID), method = "ML")
+summary(id_mod)
+anova(id_mod)
+
 ```
