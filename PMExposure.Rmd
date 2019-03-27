@@ -42,14 +42,13 @@ model <- lm(Aerosol ~ .-ID - Minute, data = pm)
 AIC(model)
 
 # take residuals and check correlation matrix
-#res <- matrix(resid(model), byrow=TRUE, ncol = 3)
-#cor(res)
+res <- matrix(resid(model), byrow=TRUE, ncol = 118)
+cor(res)
 # high correlation, so an lm model is not going to work
 ```
 
 GLS
 ```{r}
-mod_long <- gls(model = Aerosol ~ .-ID - Minute, data = pm, corAR1(form =~ 1 | ID), method = "ML")
 mod_long <- gls(model = Aerosol ~ .-ID - Minute, data = pm, corAR1(form =~ 1 | ID), method = "ML")
 AIC(mod_long)
 
@@ -57,9 +56,6 @@ iresid <- matrix(stdres.gls(mod_long), byrow = TRUE, ncol = 118)
 mat <- cor(iresid)
 # a lot lower now, but clearly still a correlation between minutes for the same patient
 
-my_ACF <- acf(pm$Aerosol, lag.max = 236)
-ACF_dframe <- data.frame(Lag=my_ACF$lag, ACF=my_ACF$acf)
-ggplot(data=ACF_dframe, aes(x=Lag, y=ACF)) + geom_col()
 ```
 
 Check assumptions
@@ -69,7 +65,6 @@ avPlots(model)
 # only need to check the one for Stationary
 
 # independence
-res <- stdres(mod_long, "pearson")
 cor(iresid)
 # the correlations are close to 0, so we can say that our assumption of independence is met
 
@@ -82,5 +77,9 @@ ggplot(data = pm, aes(x = fitted(mod_long), y = stdres.gls(mod_long))) + geom_po
 ```
 Stationary Model
 ```{r}
-stat_mod <- 
+stat_mod <- lm(Aerosol ~ Stationary, data = pm)
+full <- lm(Aerosol ~ .-ID - Minute, data = pm)
+reduced <- lm(Aerosol ~ .-ID - Minute -Stationary, data = pm)
+anova(full, reduced)
+anova(full, stat_mod)
 ```
