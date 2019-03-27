@@ -14,6 +14,9 @@ library(nlme)
 library(car)
 source("https://raw.githubusercontent.com/MJHeaton/glstools/master/stdres.gls.R")
 library(multcomp)
+library(sjPlot)
+library(sjmisc)
+library(sjlabelled)
 ```
 
 Exploratory Data Analytics
@@ -75,15 +78,22 @@ hist(stdres.gls(mod_long), xlab = "Decorrelated Residuals", main = "Histogram of
 # equal variance
 ggplot(data = pm, aes(x = fitted(mod_long), y = stdres.gls(mod_long))) + geom_point() + geom_hline(yintercept = 0, col = "red") + xlab("Fitted Values") + ylab("Residuals") + ggtitle("Fitted Values v. Residuals")
 ```
+
 Stationary Model
 ```{r}
-stat_mod <- lm(Aerosol ~ Stationary, data = pm)
-full <- lm(Aerosol ~ .-ID - Minute, data = pm)
-reduced <- lm(Aerosol ~ .-ID - Minute -Stationary, data = pm)
-anova(full, reduced)
-anova(full, stat_mod) # I feel like this is probably the one we want 
+stat_mod <- gls(model = Aerosol ~ Stationary, data = pm, corAR1(form =~ 1 | ID), method = "ML")
+summary(stat_mod)
+  #lm(Aerosol ~ Stationary, data = pm)
+#full <- gls(model = Aerosol ~ .-ID - Minute, data = pm, corAR1(form =~ 1 | ID), method = "ML")
+  #lm(Aerosol ~ .-ID - Minute, data = pm)
+
+anova(mod_long, stat_mod) # I feel like this is probably the one we want 
+
+#reduced <- lm(Aerosol ~ .-ID - Minute -Stationary, data = pm)
+#anova(full, reduced)
 
 # to see pvalues to determine which activities are significant? 
-summary(full)
+summary(mod_long)
+tab_model(mod_long) # gives the nice HTML table I pasted to our report
 
 ```
