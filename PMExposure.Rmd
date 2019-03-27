@@ -81,5 +81,9 @@ stat_mod <- lm(Aerosol ~ Stationary, data = pm)
 full <- lm(Aerosol ~ .-ID - Minute, data = pm)
 reduced <- lm(Aerosol ~ .-ID - Minute -Stationary, data = pm)
 anova(full, reduced)
-anova(full, stat_mod)
+anova(full, stat_mod) # I feel like this is probably the one we want 
+
+# to see pvalues to determine which activities are significant? 
+summary(full)
+
 ```
