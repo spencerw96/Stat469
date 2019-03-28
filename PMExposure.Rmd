@@ -21,14 +21,15 @@ library(sjlabelled)
 
 Exploratory Data Analytics
 ```{r}
-ggplot(data = pm, aes(x = Aerosol, y = Stationary)) + geom_point() + geom_abline(slope = 1, intercept = 0, col = "red")
+ggplot(data = pm, aes(y = Aerosol, x = Stationary)) + geom_point() + geom_abline(slope = 1, intercept = 0, col = "red")
 # should probably do a log transformation of Aerosol and Stationary
 
-ggplot(data = pm, aes(x = log(Aerosol), y = log(Stationary))) + geom_point() + geom_abline(slope = 1, intercept = 0, col = "red")
+ggplot(data = pm, aes(y = log(Aerosol), x = log(Stationary))) + geom_point() + geom_abline(slope = 1, intercept = 0, col = "red")
 
-a <- ggplot(data = pm, aes(x = Activity, y = Stationary)) + geom_boxplot() + coord_flip()
-b <- ggplot(data = pm, aes(x = Activity, y = Aerosol)) + geom_boxplot() + coord_flip()
-grid.arrange(a, b, nrow = 1)
+#a <- ggplot(data = pm, aes(x = Activity, y = Stationary)) + geom_boxplot() + coord_flip()
+#b <- 
+ggplot(data = pm, aes(x = Activity, y = Aerosol)) + geom_boxplot() + coord_flip()
+#grid.arrange(a, b, nrow = 1)
 # much more variability in aerosol measurements
 ```
 
@@ -46,7 +47,7 @@ AIC(model)
 
 # take residuals and check correlation matrix
 res <- matrix(resid(model), byrow=TRUE, ncol = 118)
-cor(res)
+org_cor <- cor(res)
 # high correlation, so an lm model is not going to work
 ```
 
@@ -56,7 +57,7 @@ mod_long <- gls(model = Aerosol ~ .-ID - Minute, data = pm, corAR1(form =~ 1 | I
 AIC(mod_long)
 
 iresid <- matrix(stdres.gls(mod_long), byrow = TRUE, ncol = 118)
-mat <- cor(iresid)
+cor_mat <- cor(iresid)
 # a lot lower now, but clearly still a correlation between minutes for the same patient
 
 ```
@@ -69,7 +70,7 @@ avPlots(model)
 
 # independence
 cor(iresid)
-# the correlations are close to 0, so we can say that our assumption of independence is met
+# the correlations are small, so we can say that our assumption of independence is met
 
 # normality of residuals
 hist(stdres.gls(mod_long), xlab = "Decorrelated Residuals", main = "Histogram of Decorrelated Residuals")
@@ -83,22 +84,16 @@ Stationary Model
 ```{r}
 stat_mod <- gls(model = Aerosol ~ Stationary, data = pm, corAR1(form =~ 1 | ID), method = "ML")
 summary(stat_mod)
-  #lm(Aerosol ~ Stationary, data = pm)
-#full <- gls(model = Aerosol ~ .-ID - Minute, data = pm, corAR1(form =~ 1 | ID), method = "ML")
-  #lm(Aerosol ~ .-ID - Minute, data = pm)
 
 anova(mod_long, stat_mod) # I feel like this is probably the one we want 
 
-#reduced <- lm(Aerosol ~ .-ID - Minute -Stationary, data = pm)
-#anova(full, reduced)
 
 # to see pvalues to determine which activities are significant? 
 summary(mod_long)
 tab_model(mod_long) # gives the nice HTML table I pasted to our report
 
 # differences between children?
-id_mod <- gls(model = Aerosol ~ factor(ID), data = pm, corAR1(form =~ 1 | ID), method = "ML")
+id_mod <- gls(model = Aerosol ~ Activity*ID + Stationary*ID, data = pm, corAR1(form =~ 1 | ID), method = "ML")
+anova(id_mod, mod_long)
 summary(id_mod)
-anova(id_mod)
-
 ```
