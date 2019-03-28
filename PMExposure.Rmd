@@ -17,6 +17,7 @@ library(multcomp)
 library(sjPlot)
 library(sjmisc)
 library(sjlabelled)
+library(dplyr)
 ```
 
 Exploratory Data Analytics
@@ -93,7 +94,8 @@ summary(mod_long)
 tab_model(mod_long) # gives the nice HTML table I pasted to our report
 
 # differences between children?
-id_mod <- gls(model = Aerosol ~ Activity*ID + Stationary*ID, data = pm, corAR1(form =~ 1 | ID), method = "ML")
-anova(id_mod, mod_long)
+id_mod <- gls(model = Aerosol ~ Stationary*ID + Activity*ID, data = pm, corAR1(form =~ 1 | ID), method = "ML")
+anova(mod_long, id_mod)
 summary(id_mod)
+confint(id_mod)[c(18,15,16),]
 ```
