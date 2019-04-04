@@ -24,12 +24,21 @@ obs <- agr %>% filter(!is.na(WHC))
 
 1. Create exploratory plots of the data by looking at the relationship between WHC (the response variable) and Yield and EC. Comment on any general relationships you see from the data.
 ```{r}
+ggplot(data = obs, aes(x = EC, y = WHC)) + geom_point() + xlab("Electroconductivity at the location") + ylab("Water Holding Capacity at the location")
+
+ggplot(data = obs, aes(x = Lon, y = Lat, fill = Yield)) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
 
 ```
 
 2. Fit an independent MLR model with a linear effect between Yield, EC and the response variable WHC. Explore the residuals to see if there is evidence of spatial correlation by mapping the residuals and plotting the variogram of the residuals.
+```{r}
+
+```
 
 3. To determine an appropriate correlation structure to use, fit a spatial model using exponential, spherical and Gaussian correlation functions with a nugget effect (don't forget to filter out the missing observations). Compare the model fits using AIC and use the best fit model for the remainder of the analysis.
+```{r}
+
+```
 
 4. Write out your model for analyzing the agriculture data in terms of parameters. Explain and interpret any parameters associated with the model.
 
