@@ -37,14 +37,50 @@ ggplot(data = obs, aes(x = Lon, y = Lat, fill = Yield)) + geom_raster() + scale_
 
 3. To determine an appropriate correlation structure to use, fit a spatial model using exponential, spherical and Gaussian correlation functions with a nugget effect (don't forget to filter out the missing observations). Compare the model fits using AIC and use the best fit model for the remainder of the analysis.
 ```{r}
+exp.mod <- gls(model = WHC ~ Yield + EC, data = obs, correlation = corExp(form=~Lon + Lat, nugget = TRUE), method = "ML")
+sph.mod <- gls(model = WHC ~ Yield + EC, data = obs, correlation = corSpher(form=~Lon + Lat, nugget = TRUE), method = "ML")
+gauss.mod <- gls(model = WHC ~ Yield + EC, data = obs, correlation = corGaus(form=~Lon + Lat, nugget = TRUE), method = "ML")
 
+AIC(exp.mod)
+AIC(sph.mod)
+AIC(gauss.mod)
+
+coef(exp.mod$modelStruct$corStruct, unconstrained = FALSE)
 ```
 
 4. Write out your model for analyzing the agriculture data in terms of parameters. Explain and interpret any parameters associated with the model.
+```{r}
+
+```
 
 5. Fit your spatial MLR model and validate any assumptions you made to fit the model.
+```{r}
+# 1. linearity
+avPlots(lm(WHC ~ EC + Yield, data = obs))
+# the AV plots show that our data is linear
+
+# 2. independence
+d.resids <- stdres.gls(exp.mod)
+coords <- as.matrix(obs[,1:2], ncol = 2)
+plot(variog(coords = coords, data = d.resids))
+# the variogram of decorrelated residuals is a fairly straight line, so we can say that it shows independence
+
+# 3. normality of residuals
+ggplot(data = obs, aes(x = d.resids)) + geom_histogram(binwidth = 1) + xlab("Standardized Residuals") + ylab("Frequency")
+# the histogram is slightly skewed right
+
+# 4. equal variance
+ggplot(data = obs, aes(x = fitted(exp.mod), y = d.resids)) + geom_point() + geom_abline(intercept = 0, slope = 0) + labs(x = "Fitted Values", y = "Residuals") + ggtitle("Checking Equal Variance")
+# we can say that the condition of equal variance is met because the points follow a distribution for each of the five levels of Surface
+
+```
+
 
 6. Carry out a hypothesis test that locations with higher yield had higher WHC (which would make sense because more water would be available for the plant to use). Include a confidence interval for the effect of Yield on WHC and interpret this interval.
+```{r}
+
+```
+
 
 7. Predict WHC at all the locations where WHC is missing. Provide a plot of your predictions.
 
