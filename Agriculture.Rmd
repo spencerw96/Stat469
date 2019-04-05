@@ -26,8 +26,11 @@ obs <- agr %>% filter(!is.na(WHC))
 ```{r}
 ggplot(data = obs, aes(x = EC, y = WHC)) + geom_point() + xlab("Electroconductivity at the location") + ylab("Water Holding Capacity at the location")
 
+ggplot(data = obs, aes(x = Yield, y = WHC)) + geom_point() + xlab("Electroconductivity at the location") + ylab("Water Holding Capacity at the location")
+
 ggplot(data = obs, aes(x = Lon, y = Lat, fill = Yield)) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
 
+ggplot(data = obs, aes(x = Lon, y = Lat, fill = EC)) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
 ```
 
 2. Fit an independent MLR model with a linear effect between Yield, EC and the response variable WHC. Explore the residuals to see if there is evidence of spatial correlation by mapping the residuals and plotting the variogram of the residuals.
@@ -81,7 +84,10 @@ ggplot(data = obs, aes(x = fitted(exp.mod), y = d.resids)) + geom_point() + geom
 
 ```
 
-
 7. Predict WHC at all the locations where WHC is missing. Provide a plot of your predictions.
+```{r}
+
+```
+
 
 8. (Extra Credit) Add a google map of the satellite terrain to your prediction map in #7.
