@@ -25,9 +25,12 @@ obs <- agr %>% filter(!is.na(WHC))
 1. Create exploratory plots of the data by looking at the relationship between WHC (the response variable) and Yield and EC. Comment on any general relationships you see from the data.
 ```{r}
 ggplot(data = obs, aes(x = EC, y = WHC)) + geom_point() + xlab("Electroconductivity at the location") + ylab("Water Holding Capacity at the location")
+#The data appears to be linear with WHC increasing as EC increases
 
 ggplot(data = obs, aes(x = Yield, y = WHC)) + geom_point() + xlab("Electroconductivity at the location") + ylab("Water Holding Capacity at the location")
+#The data appears to be linear with WHC increasing as Yield increases
 
+#These plots are just for our benefit and curiosity
 ggplot(data = obs, aes(x = Lon, y = Lat, fill = Yield)) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
 
 ggplot(data = obs, aes(x = Lon, y = Lat, fill = EC)) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
@@ -43,7 +46,7 @@ ggplot(data = obs, aes(x = Lon, y = Lat, fill = resid(agr_lm))) + geom_raster() 
 
 vario <- variog(coords=obs[,1:2], data=resid(agr_lm))
 plot(vario)
-#variogram appears to be increasing, thus suggesting correlation in the residuals
+#variogram appears to be increasing, this suggesting correlation in the residuals
 ```
 
 3. To determine an appropriate correlation structure to use, fit a spatial model using exponential, spherical and Gaussian correlation functions with a nugget effect (don't forget to filter out the missing observations). Compare the model fits using AIC and use the best fit model for the remainder of the analysis.
@@ -57,6 +60,7 @@ AIC(sph.mod)
 AIC(gauss.mod)
 #the exponential model yields the smallest AIC value. We will use that for the rest of the analysis
 
+#just to see the constrained variables
 coef(exp.mod$modelStruct$corStruct, unconstrained = FALSE)
 ```
 
@@ -81,11 +85,15 @@ d.resids <- stdres.gls(exp.mod)
 coords <- as.matrix(obs[,1:2], ncol = 2)
 plot(variog(coords = coords, data = d.resids))
 # the variogram of decorrelated residuals is a fairly straight line, so we can say that it shows independence
-ggplot(data = obs, aes(x = Lon, y = Lat, fill = resid(exp.mod))) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
+
+ggplot(data = obs, aes(x = Lon, y = Lat, fill = stdres.gls(exp.mod))) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
+#appears at least slightly more random than the last one
 
 # 3. normality of residuals
 ggplot(data = obs, aes(x = d.resids)) + geom_histogram(binwidth = .8) + xlab("Standardized Residuals") + ylab("Frequency")
-# the histogram is slightly skewed right
+ks.test(d.resids, 'pnorm')
+# the histogram is slightly skewed left
+#the high p-value on the ks test helps us feel more comfortable about the normality
 
 # 4. equal variance
 ggplot(data = obs, aes(x = fitted(exp.mod), y = d.resids)) + geom_point() + geom_abline(intercept = 0, slope = 0) + labs(x = "Fitted Values", y = "Residuals") + ggtitle("Checking Equal Variance")
