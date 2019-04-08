@@ -35,31 +35,45 @@ ggplot(data = obs, aes(x = Lon, y = Lat, fill = EC)) + geom_raster() + scale_fil
 
 2. Fit an independent MLR model with a linear effect between Yield, EC and the response variable WHC. Explore the residuals to see if there is evidence of spatial correlation by mapping the residuals and plotting the variogram of the residuals.
 ```{r}
+agr_lm <- lm(WHC ~ Yield*EC, data = obs)
+summary(agr_lm)
 
+ggplot(data = obs, aes(x = Lon, y = Lat, fill = resid(agr_lm))) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
+#certain sections of the map have related colors. This suggests correlation
+
+vario <- variog(coords=obs[,1:2], data=resid(agr_lm))
+plot(vario)
+#variogram appears to be increasing, thus suggesting correlation in the residuals
 ```
 
 3. To determine an appropriate correlation structure to use, fit a spatial model using exponential, spherical and Gaussian correlation functions with a nugget effect (don't forget to filter out the missing observations). Compare the model fits using AIC and use the best fit model for the remainder of the analysis.
 ```{r}
-exp.mod <- gls(model = WHC ~ Yield + EC, data = obs, correlation = corExp(form=~Lon + Lat, nugget = TRUE), method = "ML")
-sph.mod <- gls(model = WHC ~ Yield + EC, data = obs, correlation = corSpher(form=~Lon + Lat, nugget = TRUE), method = "ML")
-gauss.mod <- gls(model = WHC ~ Yield + EC, data = obs, correlation = corGaus(form=~Lon + Lat, nugget = TRUE), method = "ML")
+exp.mod <- gls(model = WHC ~ Yield*EC, data = obs, correlation = corExp(form=~Lon + Lat, nugget = TRUE), method = "ML")
+sph.mod <- gls(model = WHC ~ Yield*EC, data = obs, correlation = corSpher(form=~Lon + Lat, nugget = TRUE), method = "ML")
+gauss.mod <- gls(model = WHC ~ Yield*EC, data = obs, correlation = corGaus(form=~Lon + Lat, nugget = TRUE), method = "ML")
 
 AIC(exp.mod)
 AIC(sph.mod)
 AIC(gauss.mod)
+#the exponential model yields the smallest AIC value. We will use that for the rest of the analysis
 
 coef(exp.mod$modelStruct$corStruct, unconstrained = FALSE)
 ```
 
 4. Write out your model for analyzing the agriculture data in terms of parameters. Explain and interpret any parameters associated with the model.
 ```{r}
-
+# y ~ N(X*β, σ^2*R)
+# y is the response variable, in this case WHC
+# X is the matrix with the various parameters plus an intercept. The parameters include EC, Yield, and the interaction between the two
+# β is the vector of coefficients for each of the variables.
+# σ^2*R is a covariance matrix. 
+#R is the correlation matrix that has the correlation values between different the various coordinates. This results in 1s in the diagonal. In our case the correlation follows the exponential model so                     ρ(si, sj) = exp{-||si - sj||/ϕ}
 ```
 
 5. Fit your spatial MLR model and validate any assumptions you made to fit the model.
 ```{r}
 # 1. linearity
-avPlots(lm(WHC ~ EC + Yield, data = obs))
+avPlots(lm(WHC ~ EC*Yield, data = obs))
 # the AV plots show that our data is linear
 
 # 2. independence
@@ -67,9 +81,10 @@ d.resids <- stdres.gls(exp.mod)
 coords <- as.matrix(obs[,1:2], ncol = 2)
 plot(variog(coords = coords, data = d.resids))
 # the variogram of decorrelated residuals is a fairly straight line, so we can say that it shows independence
+ggplot(data = obs, aes(x = Lon, y = Lat, fill = resid(exp.mod))) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
 
 # 3. normality of residuals
-ggplot(data = obs, aes(x = d.resids)) + geom_histogram(binwidth = 1) + xlab("Standardized Residuals") + ylab("Frequency")
+ggplot(data = obs, aes(x = d.resids)) + geom_histogram(binwidth = .8) + xlab("Standardized Residuals") + ylab("Frequency")
 # the histogram is slightly skewed right
 
 # 4. equal variance
@@ -81,12 +96,18 @@ ggplot(data = obs, aes(x = fitted(exp.mod), y = d.resids)) + geom_point() + geom
 
 6. Carry out a hypothesis test that locations with higher yield had higher WHC (which would make sense because more water would be available for the plant to use). Include a confidence interval for the effect of Yield on WHC and interpret this interval.
 ```{r}
+summary(exp.mod)
+#the p-value associated with an increasing WHC with yield is 0.0236. this is significant and suggests that locations with higher yield have higher WHC
 
+intervals(exp.mod)$coef
+#the confidence interval for the Yield coefficient is 0.017, 0.23 which does not contain 0, so WHC apparently increases with Yield
 ```
 
 7. Predict WHC at all the locations where WHC is missing. Provide a plot of your predictions.
 ```{r}
+preds <- predictgls(exp.mod, newdframe = pred)
 
+ggplot(data = preds, aes(x = Lon, y = Lat, fill = Prediction)) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
 ```
 
 
