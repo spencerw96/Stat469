@@ -5,7 +5,7 @@ date: "April 4, 2019"
 output: word_document
 ---
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 agr <- read.table("https://mheaton.byu.edu/Courses/Stat469/Topics/3%20-%20SpatialCorrelation/1%20-%20PointReference/HWCaseStudy/Data/WaterHoldingCapacity.txt", header = TRUE)
 
 library(ggplot2)
@@ -17,6 +17,7 @@ source("https://raw.githubusercontent.com/MJHeaton/glstools/master/stdres.gls.R"
 source("https://raw.githubusercontent.com/MJHeaton/glstools/master/predictgls.R")
 library(multcomp)
 library(nlme)
+library(ggmap)
 
 pred <- agr %>% filter(is.na(WHC)) 
 obs <- agr %>% filter(!is.na(WHC))
@@ -27,13 +28,13 @@ obs <- agr %>% filter(!is.na(WHC))
 ggplot(data = obs, aes(x = EC, y = WHC)) + geom_point() + xlab("Electroconductivity at the location") + ylab("Water Holding Capacity at the location")
 #The data appears to be linear with WHC increasing as EC increases
 
-ggplot(data = obs, aes(x = Yield, y = WHC)) + geom_point() + xlab("Electroconductivity at the location") + ylab("Water Holding Capacity at the location")
+ggplot(data = obs, aes(x = Yield, y = WHC)) + geom_point() + xlab("Yield at the location") + ylab("Water Holding Capacity at the location")
 #The data appears to be linear with WHC increasing as Yield increases
 
-#These plots are just for our benefit and curiosity
-ggplot(data = obs, aes(x = Lon, y = Lat, fill = Yield)) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
+# These plots are just for our benefit and curiosity
+ggplot(data = obs, aes(x = Lon, y = Lat, fill = Yield)) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA) + xlab("Yield at the location") + ylab("Water Holding Capacity at the location")
 
-ggplot(data = obs, aes(x = Lon, y = Lat, fill = EC)) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
+ggplot(data = obs, aes(x = Lon, y = Lat, fill = EC)) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA) + xlab("Electroconductivity at the location") + ylab("Water Holding Capacity at the location")
 ```
 
 2. Fit an independent MLR model with a linear effect between Yield, EC and the response variable WHC. Explore the residuals to see if there is evidence of spatial correlation by mapping the residuals and plotting the variogram of the residuals.
@@ -51,7 +52,7 @@ plot(vario)
 
 3. To determine an appropriate correlation structure to use, fit a spatial model using exponential, spherical and Gaussian correlation functions with a nugget effect (don't forget to filter out the missing observations). Compare the model fits using AIC and use the best fit model for the remainder of the analysis.
 ```{r}
-exp.mod <- gls(model = WHC ~ Yield*EC, data = obs, correlation = corExp(form=~Lon + Lat, nugget = TRUE), method = "ML")
+exp.mod <- gls(model = WHC ~ Yield+EC, data = obs, correlation = corExp(form=~Lon + Lat, nugget = TRUE), method = "ML")
 sph.mod <- gls(model = WHC ~ Yield*EC, data = obs, correlation = corSpher(form=~Lon + Lat, nugget = TRUE), method = "ML")
 gauss.mod <- gls(model = WHC ~ Yield*EC, data = obs, correlation = corGaus(form=~Lon + Lat, nugget = TRUE), method = "ML")
 
@@ -66,12 +67,13 @@ coef(exp.mod$modelStruct$corStruct, unconstrained = FALSE)
 
 4. Write out your model for analyzing the agriculture data in terms of parameters. Explain and interpret any parameters associated with the model.
 ```{r}
-# y ~ N(X*β, σ^2*R)
+# y ~ N(X*beta, sigma^2*R)
 # y is the response variable, in this case WHC
-# X is the matrix with the various parameters plus an intercept. The parameters include EC, Yield, and the interaction between the two
-# β is the vector of coefficients for each of the variables.
-# σ^2*R is a covariance matrix. 
-#R is the correlation matrix that has the correlation values between different the various coordinates. This results in 1s in the diagonal. In our case the correlation follows the exponential model so                     ρ(si, sj) = exp{-||si - sj||/ϕ}
+# X is the matrix with the various parameters plus an intercept. The parameters include EC, Yield, and the interaction between EC and Yield
+# beta is the vector of coefficients for each of the variables.
+# sigma^2*R is a covariance matrix. 
+#R is the correlation matrix that has the correlation values between different the various coordinates. In our case the correlation follows the exponential model so rho(si, sj) = exp{-||si - sj||/ phi}
+# we used a variance nugget to capture same-location variability. if || si - sj|| = 0, then cor(si, sj) = omega, else cor(si, sj) = (1 - omega)*rho(si, sj), where omega is between 0 and 1
 ```
 
 5. Fit your spatial MLR model and validate any assumptions you made to fit the model.
@@ -97,15 +99,13 @@ ks.test(d.resids, 'pnorm')
 
 # 4. equal variance
 ggplot(data = obs, aes(x = fitted(exp.mod), y = d.resids)) + geom_point() + geom_abline(intercept = 0, slope = 0) + labs(x = "Fitted Values", y = "Residuals") + ggtitle("Checking Equal Variance")
-# we can say that the condition of equal variance is met because the points follow a distribution for each of the five levels of Surface
-
+# we can say that the condition of equal variance is met because the points follow a random distribution about 0
 ```
-
 
 6. Carry out a hypothesis test that locations with higher yield had higher WHC (which would make sense because more water would be available for the plant to use). Include a confidence interval for the effect of Yield on WHC and interpret this interval.
 ```{r}
 summary(exp.mod)
-#the p-value associated with an increasing WHC with yield is 0.0236. this is significant and suggests that locations with higher yield have higher WHC
+#the p-value associated with an increasing WHC with yield is 0.0236. this is statistically significant and suggests that locations with higher yield have higher WHC
 
 intervals(exp.mod)$coef
 #the confidence interval for the Yield coefficient is 0.017, 0.23 which does not contain 0, so WHC apparently increases with Yield
@@ -118,5 +118,10 @@ preds <- predictgls(exp.mod, newdframe = pred)
 ggplot(data = preds, aes(x = Lon, y = Lat, fill = Prediction)) + geom_raster() + scale_fill_distiller(palette = "Spectral", na.value = NA)
 ```
 
-
 8. (Extra Credit) Add a google map of the satellite terrain to your prediction map in #7.
+```{r message=FALSE, warning=FALSE}
+bb <- make_bbox(lon = Lon, lat = Lat, data = preds)
+mymap <- get_map(location = bb, zoom = 15, maptype = "satellite")
+ggmap(mymap) + geom_raster(data = preds, aes(x = Lon, y = Lat, fill = Prediction), alpha = 0.8) + scale_fill_distiller(palette = "Spectral", na.value = NA) + coord_cartesian()
+```
+
