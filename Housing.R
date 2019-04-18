@@ -10,9 +10,76 @@
   
 
 library(ggplot2)
+library(geoR)
+library(tidyverse)
+library(nlme)
+source('https://raw.githubusercontent.com/MJHeaton/glstools/master/stdres.gls.R')
 
-housing <- read.csv("https://mheaton.byu.edu/Courses/Stat469/Topics/3%20-%20SpatialCorrelation/3%20-%20Project/Data/HousingPrices.csv")
+house <- read.csv("https://mheaton.byu.edu/Courses/Stat469/Topics/3%20-%20SpatialCorrelation/3%20-%20Project/Data/HousingPrices.csv")
+house$House.Style <- as.factor(house$House.Style)
 
-ggplot(data = housing, aes(x = Lon, y = Lat, color = Price)) + geom_point() + scale_color_distiller(palette = "RdBu", na.value = "white")
+h_true <- house %>% filter(!is.na(Price))
+h_pred <- house %>% filter(is.na(Price))
 
-# most important and informative plot: plot of the residuals 
+ggplot(data = h_true, aes(x = Lon, y = Lat, color = Price)) + geom_point() + scale_color_distiller(palette = "RdBu", na.value = "white")
+pairs(house[c(1,4:11)])
+boxplot(Price~House.Style, data=h_true)
+
+#check assumptions and effectiveness w/normal linear model
+home_lm <- lm(Price~., data=house)
+par(mfrow=c(1,1))
+res <- stdres(home_lm)
+fit <- fitted(home_lm)
+
+#check spatial correlation
+ggplot(data = h_true, aes(x = Lon, y = Lat, color = res)) + geom_point() + scale_color_distiller(palette = "RdBu", na.value = "white")
+vario <- variog(coords=h_true[,2:3], data=resid(home_lm))
+plot(vario)
+#there is apparently spatial correlation, consider this in future model
+#normality
+hist(res)
+#equal variance
+plot(fit, res)
+#is there heteroskedasticity?
+#linearity
+avPlots(home_lm)
+#build a gls model that accounts for heteroskedasticity and spatial correlation
+#the variables that appear to effect homoskedasticity are Gr.Liv.Area, Full.Bath, and Garage.Cars
+#when going through these in the model, Gr.Liv.Area appears to account for all of it on its own, which makes 
+#sense because garage size and number of bathrooms will certainly be related to house size 
+het_gls <- gls(model=Price~., data=h_true, weights=varExp(form=~Gr.Liv.Area), method="ML")
+std_res <- resid(het_gls, type = "pearson")
+gls_fit <- fitted(het_gls)
+plot(gls_fit, std_res)
+hist(std_res)
+
+exp_gls <- gls(model=Price~., data=h_true, correlation=corExp(form=~Lon+Lat, nugget=TRUE), 
+    weights=varExp(form=~Gr.Liv.Area), method="ML")
+
+sph_gls <- gls(model=Price~., data=h_true, correlation=corSpher(form=~Lon+Lat, nugget=TRUE), 
+               weights=varExp(form=~Gr.Liv.Area), method="ML")
+
+gaus_gls <- gls(model=Price~., data=h_true, correlation=corGaus(form=~Lon+Lat, nugget=TRUE), 
+               weights=varExp(form=~Gr.Liv.Area), method="ML")
+
+AIC(exp_gls)
+AIC(sph_gls)
+AIC(gaus_gls) #returns the smallest value
+
+home_gls <- gaus_gls
+gaus_fit <- fitted(home_gls)
+#check spatial correlation 
+dec_res <- stdres.gls(gaus_gls)
+dec_var <- variog(coords=h_true[,2:3], data=dec_res)
+plot(std_var)
+#maybe not a perfect variogram, but it looks much better
+ggplot(data = h_true, aes(x = Lon, y = Lat, color = dec_res)) + geom_point() + scale_color_distiller(palette = "RdBu", na.value = "white")
+#this map looks good, the residuals appear to be random, indepenence met
+#check other assumptsions, linearity is was already checked
+
+plot(gaus_fit, dec_res)
+#equal variance looks good for homoskedasticity
+hist(dec_res)
+#looks normal
+#we've got our model!
+summary(home_gls)
