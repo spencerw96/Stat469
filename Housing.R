@@ -21,7 +21,8 @@ house$House.Style <- as.factor(house$House.Style)
 h_true <- house %>% filter(!is.na(Price))
 h_pred <- house %>% filter(is.na(Price))
 
-ggplot(data = h_true, aes(x = Lon, y = Lat, color = Price)) + geom_point() + scale_color_distiller(palette = "RdBu", na.value = "white")
+ggplot(data = h_true, aes(x = Lon, y = Lat, color = Price)) + 
+  geom_point() + scale_color_distiller(palette = "RdBu", na.value = "white")
 pairs(house[c(1,4:11)])
 boxplot(Price~House.Style, data=h_true)
 
@@ -32,7 +33,8 @@ res <- stdres(home_lm)
 fit <- fitted(home_lm)
 
 #check spatial correlation
-ggplot(data = h_true, aes(x = Lon, y = Lat, color = res)) + geom_point() + scale_color_distiller(palette = "RdBu", na.value = "white")
+ggplot(data = h_true, aes(x = Lon, y = Lat, color = res)) + 
+  geom_point() + scale_color_distiller(palette = "RdBu", na.value = "white")
 vario <- variog(coords=h_true[,2:3], data=resid(home_lm))
 plot(vario)
 #there is apparently spatial correlation, consider this in future model
@@ -73,7 +75,8 @@ dec_res <- stdres.gls(gaus_gls)
 dec_var <- variog(coords=h_true[,2:3], data=dec_res)
 plot(std_var)
 #maybe not a perfect variogram, but it looks much better
-ggplot(data = h_true, aes(x = Lon, y = Lat, color = dec_res)) + geom_point() + scale_color_distiller(palette = "RdBu", na.value = "white")
+ggplot(data = h_true, aes(x = Lon, y = Lat, color = dec_res)) + geom_point() + 
+  scale_color_distiller(palette = "RdBu", na.value = "white")
 #this map looks good, the residuals appear to be random, indepenence met
 #check other assumptsions, linearity is was already checked
 
