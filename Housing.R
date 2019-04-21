@@ -14,6 +14,7 @@ library(geoR)
 library(tidyverse)
 library(nlme)
 source('https://raw.githubusercontent.com/MJHeaton/glstools/master/stdres.gls.R')
+source("https://raw.githubusercontent.com/MJHeaton/glstools/master/predictgls.R")
 
 house <- read.csv("https://mheaton.byu.edu/Courses/Stat469/Topics/3%20-%20SpatialCorrelation/3%20-%20Project/Data/HousingPrices.csv")
 house$House.Style <- as.factor(house$House.Style)
@@ -73,7 +74,7 @@ gaus_fit <- fitted(home_gls)
 #check spatial correlation 
 dec_res <- stdres.gls(gaus_gls)
 dec_var <- variog(coords=h_true[,2:3], data=dec_res)
-plot(std_var)
+plot(std_var) # THIS DOESN'T REFER TO ANYTHING***************************
 #maybe not a perfect variogram, but it looks much better
 ggplot(data = h_true, aes(x = Lon, y = Lat, color = dec_res)) + geom_point() + 
   scale_color_distiller(palette = "RdBu", na.value = "white")
@@ -86,3 +87,26 @@ hist(dec_res)
 #looks normal
 #we've got our model!
 summary(home_gls)
+
+#####################################
+### answer the research questions ###
+#####################################
+
+### How well do the home characteristics explain sale price?
+# pseudo r^2 (cor(actual, predicted))^2
+h <- h_true[,-1]
+preds_h <- predictgls(home_gls, newdframe = h) 
+(cor(h_true[,1], preds_h[,12]))^2
+
+### What factors increase the sale price of a home?
+summary(home_gls)
+
+### Does the variability of sale price increase with the size of the home (as given by living area)?
+
+
+### What is your predicted/appraised sale price for the homes in the dataset that do not have a sale price?
+# create predicted values on dataframe with missing price values
+preds.fit <- predictgls(home_gls, newdframe = h_pred)
+
+
+
