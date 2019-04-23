@@ -30,7 +30,7 @@ ggplot(data = h_true, aes(x = Lon, y = Lat, color = Price)) + xlab("Longitude") 
   geom_point() + scale_color_distiller(palette = "Spectral", na.value = "white", labels = comma) +
   ggtitle("Housing Prices by Location")
 # for linearity
-pairs(house[c(1,4:11)])
+# pairs(house[c(1, 2, 4, 6, 8:11)])
 boxplot(Price~House.Style, data=h_true)
 
 #check assumptions and effectiveness w/normal linear model
@@ -48,7 +48,9 @@ plot(vario)
 #normality
 hist(res)
 #equal variance
-plot(fit, res)
+qplot(fit, res, geom = "point") + geom_hline(yintercept = 0, col = "red") + 
+  xlab("Fitted Values") + ylab("Residuals") + ggtitle("Fitted Values v. Residuals") +
+  scale_x_continuous(labels = comma)
 #is there heteroskedasticity?
 #linearity
 avPlots(home_lm)
@@ -81,15 +83,21 @@ gaus_fit <- fitted(home_gls)
 dec_res <- stdres.gls(gaus_gls)
 dec_var <- variog(coords=h_true[,2:3], data=dec_res)
 plot(dec_var) 
-#maybe not a perfect variogram, but it looks much better
+#maybe not a perfect variogram, but it looks much better (INDEPENDENCE)
 ggplot(data = h_true, aes(x = Lon, y = Lat, color = dec_res)) + geom_point() + 
-  scale_color_distiller(palette = "RdBu", na.value = "white")
+  scale_color_distiller(palette = "Spectral", na.value = "white") +
+  xlab("Longitude") + ylab("Latitude")
 #this map looks good, the residuals appear to be random, indepenence met
-#check other assumptsions, linearity is was already checked
 
-plot(gaus_fit, dec_res)
+#linearity
+avPlots(home_lm)
+
+qplot(gaus_fit, dec_res) + geom_point() + geom_hline(yintercept = 0, col = "red") + 
+  xlab("Fitted Values") + ylab("Residuals") + ggtitle("Fitted Values v. Residuals") +
+  scale_x_continuous(labels = comma)
 #equal variance looks good for homoskedasticity
-hist(dec_res)
+
+qplot(dec_res, geom = "histogram", bins = 10) + xlab("Residuals") + ylab("Frequency")
 #looks normal
 #we've got our model!
 summary(home_gls)
