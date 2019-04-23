@@ -85,7 +85,7 @@ dec_var <- variog(coords=h_true[,2:3], data=dec_res)
 plot(dec_var) 
 #maybe not a perfect variogram, but it looks much better (INDEPENDENCE)
 ggplot(data = h_true, aes(x = Lon, y = Lat, color = dec_res)) + geom_point() + 
-  scale_color_distiller(palette = "Spectral", na.value = "white") +
+  scale_color_distiller(palette = "RdBu", na.value = "white") +
   xlab("Longitude") + ylab("Latitude")
 #this map looks good, the residuals appear to be random, indepenence met
 
@@ -185,3 +185,7 @@ ks.test(res, "pnorm")
 # create predicted values on dataframe with missing price values
 preds.fit <- predictgls(home_gls, newdframe = h_pred)
 predictedvals <- preds.fit[,12]
+ggplot(data = preds.fit, aes(x = Lon, y = Lat, color = Prediction)) + geom_point() + 
+  scale_color_distiller(palette = "RdBu", na.value = "white", label = comma) + 
+  xlab("Longitude") + ylab("Latitude") 
+
