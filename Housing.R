@@ -102,6 +102,63 @@ qplot(dec_res, geom = "histogram", bins = 10) + xlab("Residuals") + ylab("Freque
 #we've got our model!
 summary(home_gls)
 
+n.cv <- 30
+pb <- txtProgressBar(min = 0, max = n.cv, style = 3)
+n.test <- round(.2*nrow(h_true))
+
+bias <- rep(NA, n.cv)
+rpmse <- rep(NA, n.cv)
+cvg <- rep(NA, n.cv)
+width <- rep(NA, n.cv)
+
+bias.lm <- rep(NA, n.cv)
+rpmse.lm <- rep(NA, n.cv)
+cvg.lm <- rep(NA, n.cv)
+width.lm <- rep(NA, n.cv)
+
+for (cv in 1:n.cv) {
+  # split the data into train and test
+  test.obs <- sample(1:nrow(h_true), n.test)
+  test.set <- h_true[test.obs,]
+  train.set <- h_true[-test.obs,]
+  
+  # GLS
+  # fit a model with training set only
+  train.gls <- gls(model=Price~., data = train.set, correlation=corGaus(form=~Lon+Lat, nugget=TRUE), 
+                   weights=varExp(form=~Gr.Liv.Area), method="ML")
+  # predict test set
+  test.preds <- predictgls(train.gls, test.set, level = 0.95)
+  
+  # calculate diagnostics
+  rpmse[cv] <- (test.preds$Prediction - test.set$Price)^2 %>% mean() %>% sqrt()
+  cvg[cv] <- mean((test.preds$lwr < test.set$Price) & (test.preds$upr > test.set$Price))
+  bias[cv] <- (test.preds$Prediction - test.set[,"Price"]) %>% mean()
+  width[cv] <- (test.preds$upr - test.preds$lwr) %>% mean()
+  
+  # LM
+  train.lm <- lm(Price ~ ., data = train.set)
+  my.preds <- predict.lm(train.lm, newdata = test.set, interval = "prediction")
+
+  # calculate diagnostics
+  bias.lm[cv] <- (my.preds[,"fit"] - test.set[,"Price"]) %>% mean()
+  rpmse.lm[cv] <- ((my.preds[,"fit"] - test.set[,"Price"])^2) %>% mean() %>% sqrt()
+  cvg.lm[cv] <- ((test.set[,"Price"] > my.preds[,"lwr"]) & (test.set[,"Price"] < my.preds[,"upr"])) %>% mean()
+  width.lm[cv] <- (my.preds[,"upr"] - my.preds[,"lwr"]) %>% mean()
+  
+  ## Update the progress bar
+  setTxtProgressBar(pb, cv)
+}
+close(pb)
+
+diagnostics <- matrix(c(mean(bias.lm), mean(bias), 
+                        mean(cvg.lm), mean(cvg),
+                        mean(width.lm), mean(width),
+                        mean(rpmse.lm), mean(rpmse)), byrow = TRUE, ncol = 2)
+rownames(diagnostics) <- c("bias", "coverage", "width", "RPMSE")
+colnames(diagnostics) <- c("lm model", "gls model")
+print(diagnostics)
+# the diagnostics are better under the gls model
+
 #####################################
 ### answer the research questions ###
 #####################################
@@ -115,6 +172,10 @@ preds_h <- predictgls(home_gls, newdframe = h)
 ### What factors increase the sale price of a home?
 summary(home_gls)
 confint(home_gls)
+library(sjPlot) 
+library(sjmisc)
+library(sjlabelled)
+tab_model(home_gls)
 
 ### Does the variability of sale price increase with the size of the home (as given by living area)?
 bptest(home_lm)
